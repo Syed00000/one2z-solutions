@@ -68,6 +68,17 @@ mongoose.connect(process.env.MONGODB_URI)
     process.exit(1);
   });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    mongoConnected: mongoose.connection.readyState === 1
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
@@ -75,15 +86,6 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/upload', uploadRoutes);
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'Technologiya API is running',
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Error handling middleware
 app.use(notFound);
