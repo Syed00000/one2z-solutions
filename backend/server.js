@@ -44,11 +44,13 @@ app.use(cors({
     'http://127.0.0.1:3000',
     'http://127.0.0.1:8080',
     'http://127.0.0.1:8081',
-    'https://one2zsolutions.vercel.app'
+    'https://one2zsolutions.vercel.app',
+    'https://one2zsolutions.vercel.app/'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 
 // Body parsing middleware
