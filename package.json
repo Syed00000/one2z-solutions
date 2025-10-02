@@ -1,7 +1,7 @@
 {
-  "name": "technologiya",
+  "name": "one2z-solutions",
   "version": "1.0.0",
-  "description": "Technologiya - Interior Design & Construction Company",
+  "description": "One2Z Solutions - Interior Design & Construction Company",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
