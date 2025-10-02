@@ -33,9 +33,21 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Simple CORS - Allow all origins for now
+// CORS - Specific origin with credentials
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://one2zsolutions.vercel.app',
+    'http://localhost:8080',
+    'http://localhost:8081',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cookie');
@@ -49,10 +61,16 @@ app.use((req, res, next) => {
 
 // Backup CORS with cors package
 app.use(cors({
-  origin: '*',
-  credentials: false,
+  origin: [
+    'https://one2zsolutions.vercel.app',
+    'http://localhost:8080',
+    'http://localhost:8081',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin'],
   optionsSuccessStatus: 200
 }));
 
