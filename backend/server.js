@@ -18,7 +18,16 @@ import uploadRoutes from './routes/upload.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 
+// Load environment variables
 dotenv.config();
+
+// Set production defaults if not set
+if (process.env.NODE_ENV === 'production' && !process.env.MONGODB_URI) {
+  process.env.MONGODB_URI = 'mongodb+srv://username:password@cluster.mongodb.net/one2z-solutions';
+  process.env.JWT_SECRET = 'your-super-secure-jwt-secret-key-here-32-chars-long-for-security';
+  process.env.ADMIN_EMAIL = 'syedimranh59@gmail.com';
+  process.env.ADMIN_PASSWORD = 'admin@123';
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
