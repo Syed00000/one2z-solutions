@@ -96,7 +96,24 @@ app.get('/api/health', (req, res) => {
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    mongoConnected: mongoose.connection.readyState === 1
+    mongoConnected: mongoose.connection.readyState === 1,
+    hasMongoUri: !!process.env.MONGODB_URI,
+    hasJwtSecret: !!process.env.JWT_SECRET
+  });
+});
+
+// Debug endpoint
+app.get('/api/debug', (req, res) => {
+  res.json({
+    environment: process.env.NODE_ENV,
+    mongoState: mongoose.connection.readyState,
+    mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+    hasRequiredEnvVars: {
+      MONGODB_URI: !!process.env.MONGODB_URI,
+      JWT_SECRET: !!process.env.JWT_SECRET,
+      ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+      ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD
+    }
   });
 });
 
