@@ -33,57 +33,28 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS configuration - MUST be before routes
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173', 
-      'http://localhost:8080',
-      'http://localhost:8081',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:8080',
-      'http://127.0.0.1:8081',
-      'https://one2zsolutions.vercel.app'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Origin',
-    'X-Requested-With', 
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'Cookie'
-  ],
-  optionsSuccessStatus: 200
-}));
-
-// Additional CORS headers for preflight
+// Simple CORS - Allow all origins for now
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cookie');
   
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
-  } else {
-    next();
+    return;
   }
+  next();
 });
+
+// Backup CORS with cors package
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+}));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
