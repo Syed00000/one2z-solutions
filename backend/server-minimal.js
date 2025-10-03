@@ -65,26 +65,29 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   
-  // Simple hardcoded admin check
-  if (email === 'syedimranh59@gmail.com' && password === 'admin@123') {
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: '1',
-          email: 'syedimranh59@gmail.com',
-          role: 'admin'
-        },
-        token: 'fake-jwt-token-for-testing'
-      }
-    });
-  } else {
-    res.status(401).json({
-      success: false,
-      message: 'Invalid credentials'
-    });
-  }
+  console.log('Login attempt received:', { email, password });
+  
+  // Debug response first
+  res.json({
+    success: true,
+    message: 'Login successful - hardcoded response',
+    debug: {
+      receivedEmail: email,
+      receivedPassword: password,
+      expectedEmail: 'syedimranh59@gmail.com',
+      expectedPassword: 'admin@123',
+      emailMatch: email === 'syedimranh59@gmail.com',
+      passwordMatch: password === 'admin@123'
+    },
+    data: {
+      user: {
+        id: '1',
+        email: email || 'syedimranh59@gmail.com',
+        role: 'admin'
+      },
+      token: 'fake-jwt-token-for-testing'
+    }
+  });
 });
 
 app.get('/api/projects', (req, res) => {
