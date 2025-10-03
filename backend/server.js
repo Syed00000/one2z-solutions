@@ -22,11 +22,11 @@ import { notFound } from './middleware/notFound.js';
 dotenv.config();
 
 // Set production defaults if not set
-if (process.env.NODE_ENV === 'production') {
-  process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/one2z-solutions';
-  process.env.JWT_SECRET = process.env.JWT_SECRET || 'your-super-secure-jwt-secret-key-here-32-chars-long-for-security';
-  process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'syedimranh59@gmail.com';
-  process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@123';
+if (process.env.NODE_ENV === 'production' && !process.env.MONGODB_URI) {
+  process.env.MONGODB_URI = 'mongodb+srv://username:password@cluster.mongodb.net/one2z-solutions';
+  process.env.JWT_SECRET = 'your-super-secure-jwt-secret-key-here-32-chars-long-for-security';
+  process.env.ADMIN_EMAIL = 'syedimranh59@gmail.com';
+  process.env.ADMIN_PASSWORD = 'admin@123';
 }
 
 const app = express();
@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', '*');
   res.header('Access-Control-Allow-Headers', '*');
   res.header('Access-Control-Max-Age', '86400');
-
+  
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
