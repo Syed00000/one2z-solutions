@@ -245,9 +245,14 @@ router.post('/forgot-password', validatePasswordReset, async (req, res) => {
       // Still return success so user can use OTP from console
       res.status(200).json({
         success: true,
+<<<<<<< HEAD
         message: 'OTP generated successfully. Email service temporarily unavailable - check server logs for OTP.',
         devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
         warning: 'Email configuration needs to be updated with valid Gmail App Password'
+=======
+        message: 'OTP generated successfully. Check server console for OTP code.',
+        devOtp: otp // Always show OTP for now
+>>>>>>> 95a6cd51d12bbb2b45042449c3aba3d80758cde5
       });
     }
 
