@@ -64,6 +64,71 @@ app.use((req, res, next) => {
   next();
 });
 
+// Debug endpoint
+app.get('/api/debug', async (req, res) => {
+  try {
+    let projectCount = 0;
+    let reviewCount = 0;
+    let userCount = 0;
+    let adminUser = null;
+    
+    if (mongoose.connection.readyState === 1) {
+      const Project = (await import('./models/Project.js')).default;
+      const Review = (await import('./models/Review.js')).default;
+      const User = (await import('./models/User.js')).default;
+      
+      projectCount = await Project.countDocuments();
+      reviewCount = await Review.countDocuments();
+      userCount = await User.countDocuments();
+      adminUser = await User.findOne({ role: 'admin' }).select('email role isActive');
+    }
+    
+    res.json({
+      environment: process.env.NODE_ENV,
+      mongoState: mongoose.connection.readyState,
+      mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+      databaseName: mongoose.connection.name,
+      projectCount,
+      reviewCount,
+      userCount,
+      adminUser: adminUser ? { 
+        email: adminUser.email, 
+        role: adminUser.role, 
+        isActive: adminUser.isActive 
+      } : null,
+      hasRequiredEnvVars: {
+        MONGODB_URI: !!process.env.MONGODB_URI,
+        JWT_SECRET: !!process.env.JWT_SECRET,
+        ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+        ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
+        EMAIL_USER: !!process.env.EMAIL_USER,
+        EMAIL_PASSWORD: !!process.env.EMAIL_PASSWORD
+      },
+      emailConfig: {
+        emailUser: process.env.EMAIL_USER,
+        hasEmailPassword: !!process.env.EMAIL_PASSWORD,
+        emailPasswordLength: process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.length : 0,
+        isPlaceholder: process.env.EMAIL_PASSWORD === 'your-gmail-app-password'
+      }
+    });
+  } catch (error) {
+    res.json({
+      environment: process.env.NODE_ENV,
+      mongoState: mongoose.connection.readyState,
+      mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+      error: error.message,
+      hasRequiredEnvVars: {
+        MONGODB_URI: !!process.env.MONGODB_URI,
+        JWT_SECRET: !!process.env.JWT_SECRET,
+        ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+        ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
+        EMAIL_USER: !!process.env.EMAIL_USER,
+        EMAIL_PASSWORD: !!process.env.EMAIL_PASSWORD
+      }
+    });
+  }
+});
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -77,23 +142,21 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch((error) => {
     console.error('❌ MongoDB connection error:', error.message);
+    console.error('❌ Full error:', error);
+    console.error('❌ MongoDB URI format check:', process.env.MONGODB_URI ? 'URI exists' : 'URI missing');
   });
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: 'One2Z Solutions API Server',
-    status: 'Running',
-    version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      auth: '/api/auth',
-      projects: '/api/projects',
-      messages: '/api/messages',
-      meetings: '/api/meetings',
-      reviews: '/api/reviews'
-    }
-  });
+// Handle MongoDB connection events
+mongoose.connection.on('connected', () => {
+  console.log('✅ Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️  Mongoose disconnected from MongoDB');
 });
 
 // Health check endpoint
@@ -103,7 +166,12 @@ app.get('/api/health', (req, res) => {
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    mongoConnected: mongoose.connection.readyState === 1
+    mongoConnected: mongoose.connection.readyState === 1,
+    mongoState: mongoose.connection.readyState,
+    mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+    hasMongoUri: !!process.env.MONGODB_URI,
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    mongoUriPreview: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'Not set'
   });
 });
 
