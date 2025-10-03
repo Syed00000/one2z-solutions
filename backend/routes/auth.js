@@ -242,7 +242,7 @@ router.post('/forgot-password', validatePasswordReset, async (req, res) => {
       res.status(200).json({
         success: true,
         message: 'OTP generated successfully. Check server console for OTP code.',
-        devOtp: process.env.NODE_ENV === 'development' ? otp : undefined
+        devOtp: otp // Always show OTP for now
       });
     }
 
