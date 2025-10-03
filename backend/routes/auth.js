@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { randomBytes, createHash } from 'crypto';
 import nodemailer from 'nodemailer';
 import User from '../models/User.js';
@@ -73,28 +74,38 @@ router.post('/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('🔐 Login attempt for:', email);
+    console.log('🔗 MongoDB connection state:', mongoose.connection.readyState);
+
     // Check if user exists
     const user = await User.findOne({ email }).select('+password');
     
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
+
+    console.log('✅ User found:', user.email);
 
     // Check password
     const isMatch = await user.comparePassword(password);
     
     if (!isMatch) {
+      console.log('❌ Password mismatch for:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
 
+    console.log('✅ Password verified for:', email);
+
     // Check if user is active
     if (!user.isActive) {
+      console.log('❌ User account deactivated:', email);
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated'
@@ -105,12 +116,18 @@ router.post('/login', validateLogin, async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
+    console.log('✅ Login successful for:', email);
     sendTokenResponse(user, 200, res);
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
-      message: 'Server error during login'
+      message: 'Server error during login',
+      ...(process.env.NODE_ENV === 'development' && { error: error.message })
     });
   }
 });
