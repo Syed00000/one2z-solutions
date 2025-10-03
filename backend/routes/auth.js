@@ -14,16 +14,19 @@ const otpStore = new Map();
 // Email transporter configuration
 const createEmailTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, // true for 465, false for other ports
+    service: 'gmail', // Use Gmail service instead of manual SMTP config
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
     },
-    tls: {
-      rejectUnauthorized: false
-    }
+    // Additional options for better cloud compatibility
+    pool: true,
+    maxConnections: 1,
+    rateDelta: 20000,
+    rateLimit: 5,
+    connectionTimeout: 60000, // 60 seconds
+    greetingTimeout: 30000,   // 30 seconds
+    socketTimeout: 60000      // 60 seconds
   });
 };
 
@@ -205,9 +208,11 @@ router.post('/forgot-password', validatePasswordReset, async (req, res) => {
 
     // Send OTP via email
     try {
+      console.log('📧 Creating email transporter...');
       const transporter = createEmailTransporter();
       
-      await transporter.sendMail({
+      console.log('📧 Sending OTP email...');
+      const mailOptions = {
         from: process.env.EMAIL_USER || 'noreply@one2zsolutions.com',
         to: email,
         subject: 'Password Reset OTP - One2Z Solutions',
@@ -224,9 +229,11 @@ router.post('/forgot-password', validatePasswordReset, async (req, res) => {
             <p style="color: #666; font-size: 12px;">One2Z Solutions - Construction & Interior Design</p>
           </div>
         `
-      });
+      };
 
+      const result = await transporter.sendMail(mailOptions);
       console.log('✅ OTP email sent successfully to:', email);
+      console.log('📧 Email result:', result.messageId);
 
       res.status(200).json({
         success: true,
