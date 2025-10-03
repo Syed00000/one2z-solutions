@@ -73,6 +73,23 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('❌ MongoDB connection error:', error.message);
   });
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'One2Z Solutions API Server',
+    status: 'Running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      projects: '/api/projects',
+      messages: '/api/messages',
+      meetings: '/api/meetings',
+      reviews: '/api/reviews'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
