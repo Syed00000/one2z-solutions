@@ -50,7 +50,7 @@ app.use(limiter);
 
 // CORS configuration - Allow everything for now
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app'],
+  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-backend.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'content-type', 'x-requested-with'],
@@ -60,7 +60,7 @@ app.use(cors({
 
 // Manual CORS headers
 app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app'];
+  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-backend.onrender.com'];
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
