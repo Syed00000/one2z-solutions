@@ -34,9 +34,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS configuration
+// CORS configuration - Allow all origins for now
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions.onrender.com'],
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'content-type', 'x-requested-with'],
@@ -44,13 +44,9 @@ app.use(cors({
   maxAge: 600
 }));
 
-// Manual CORS headers
+// Manual CORS headers - Allow all for now
 app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions.onrender.com'];
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, content-type');
   res.header('Access-Control-Allow-Credentials', 'true');
