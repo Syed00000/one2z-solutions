@@ -89,6 +89,8 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch((error) => {
     console.error('❌ MongoDB connection error:', error.message);
+    console.error('❌ Full error:', error);
+    console.error('❌ MongoDB URI format check:', process.env.MONGODB_URI ? 'URI exists' : 'URI missing');
   });
 
 // Handle MongoDB connection events
@@ -112,8 +114,11 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     mongoConnected: mongoose.connection.readyState === 1,
+    mongoState: mongoose.connection.readyState,
+    mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
     hasMongoUri: !!process.env.MONGODB_URI,
-    hasJwtSecret: !!process.env.JWT_SECRET
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    mongoUriPreview: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'Not set'
   });
 });
 
@@ -122,13 +127,18 @@ app.get('/api/debug', async (req, res) => {
   try {
     let projectCount = 0;
     let reviewCount = 0;
+    let userCount = 0;
+    let adminUser = null;
     
     if (mongoose.connection.readyState === 1) {
       const Project = (await import('./models/Project.js')).default;
       const Review = (await import('./models/Review.js')).default;
+      const User = (await import('./models/User.js')).default;
       
       projectCount = await Project.countDocuments();
       reviewCount = await Review.countDocuments();
+      userCount = await User.countDocuments();
+      adminUser = await User.findOne({ role: 'admin' }).select('email role isActive');
     }
     
     res.json({
@@ -138,6 +148,12 @@ app.get('/api/debug', async (req, res) => {
       databaseName: mongoose.connection.name,
       projectCount,
       reviewCount,
+      userCount,
+      adminUser: adminUser ? { 
+        email: adminUser.email, 
+        role: adminUser.role, 
+        isActive: adminUser.isActive 
+      } : null,
       hasRequiredEnvVars: {
         MONGODB_URI: !!process.env.MONGODB_URI,
         JWT_SECRET: !!process.env.JWT_SECRET,
@@ -157,6 +173,46 @@ app.get('/api/debug', async (req, res) => {
         ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
         ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD
       }
+    });
+  }
+});
+
+// Seed endpoint for production (temporary)
+app.post('/api/seed', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const Project = (await import('./models/Project.js')).default;
+    const Review = (await import('./models/Review.js')).default;
+
+    // Check if admin already exists
+    const existingAdmin = await User.findOne({ role: 'admin' });
+    if (existingAdmin) {
+      return res.json({
+        success: true,
+        message: 'Admin user already exists',
+        admin: { email: existingAdmin.email, role: existingAdmin.role }
+      });
+    }
+
+    // Create admin user
+    const adminUser = await User.create({
+      email: process.env.ADMIN_EMAIL || 'syedimranh59@gmail.com',
+      password: process.env.ADMIN_PASSWORD || 'admin@123',
+      role: 'admin',
+      isActive: true
+    });
+
+    res.json({
+      success: true,
+      message: 'Admin user created successfully',
+      admin: { email: adminUser.email, role: adminUser.role }
+    });
+  } catch (error) {
+    console.error('Seed error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating admin user',
+      error: error.message
     });
   }
 });
