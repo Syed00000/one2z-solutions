@@ -64,23 +64,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('🧪 Login attempt:', { email, password });
+      console.log('🧪 Login attempt:', { email, password: '***' });
       const response = await api.auth.login({ email, password });
       console.log('🔄 API response:', response);
       
       if (response.success) {
+        // Handle direct response format (token and user are at root level)
         const { token: authToken, user: userData } = response as any;
+        
+        if (!authToken || !userData) {
+          throw new Error('Invalid response format: missing token or user data');
+        }
         
         setToken(authToken);
         setUser(userData);
         
         localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(userData));
+        
+        console.log('✅ Login successful for:', userData.email);
       } else {
-        throw new Error('Login failed');
+        throw new Error(response.message || 'Login failed');
       }
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      console.error('❌ Login error:', error);
+      
+      // Provide more specific error messages
+      if (error.message?.includes('fetch')) {
+        throw new Error('Unable to connect to server. Please check your internet connection.');
+      } else if (error.message?.includes('401')) {
+        throw new Error('Invalid email or password.');
+      } else if (error.message?.includes('500')) {
+        throw new Error('Server error. Please try again later.');
+      }
+      
       throw error;
     }
   };
@@ -107,8 +124,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await api.auth.me();
       
-      if (response.success && response.data) {
-        setUser(response.data as User);
+      if (response.success && (response as any).user) {
+        setUser((response as any).user as User);
       } else {
         // Token is invalid, clear auth state
         logout();
