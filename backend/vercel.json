@@ -3,14 +3,14 @@
   "name": "one2z-solutions-backend",
   "builds": [
     {
-      "src": "server-minimal.js",
+      "src": "server.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/server-minimal.js"
+      "dest": "/server.js"
     }
   ],
   "env": {
