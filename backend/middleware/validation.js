@@ -5,6 +5,10 @@ export const handleValidationErrors = (req, res, next) => {
   if (!errors.isEmpty()) {
     console.error('❌ Validation errors:', errors.array());
     console.error('📝 Request body:', req.body);
+    console.error('🔍 Field details:');
+    errors.array().forEach(error => {
+      console.error(`  - Field: ${error.path}, Value: "${error.value}", Error: ${error.msg}`);
+    });
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
@@ -73,6 +77,11 @@ export const validateMessage = [
     .isEmail()
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
+  body('phone')
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Phone number must be between 10 and 20 characters'),
   body('message')
     .trim()
     .isLength({ min: 10, max: 2000 })

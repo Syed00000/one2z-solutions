@@ -72,7 +72,8 @@ router.get('/', optionalAuth, async (req, res) => {
     console.error('Get projects error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching projects'
+      message: 'Server error while fetching projects',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });

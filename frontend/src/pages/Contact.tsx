@@ -25,8 +25,10 @@ const Contact = () => {
     try {
       // Clean form data - remove empty phone field if not provided
       const cleanFormData = {
-        ...formData,
-        phone: formData.phone.trim() || undefined
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        message: formData.message.trim(),
+        ...(formData.phone.trim() && { phone: formData.phone.trim() })
       };
       
       console.log('📧 Sending message data:', cleanFormData);

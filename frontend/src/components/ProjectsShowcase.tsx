@@ -18,57 +18,51 @@ interface Project {
 export const ProjectsShowcase = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const loadProjects = async () => {
       try {
-        console.log('🏠 Loading featured projects for homepage...');
+        setLoading(true);
+        setError(null);
         
-        // First try to get featured projects
-        let response = await api.projects.getAll({ 
+        // Get all published projects
+        const response = await api.projects.getAll({ 
           status: 'published', 
-          featured: 'true', 
-          limit: 3 
+          limit: 6
         });
         
-        console.log('🌟 Featured projects response:', response);
+        if (!isMounted) return;
         
-        if (response.success && response.data && (response.data as any[]).length > 0) {
-          console.log(`✅ Found ${(response.data as any[]).length} featured projects`);
-          setProjects((response.data as Project[]) || []);
+        if (response.success && response.data) {
+          const projectsData = Array.isArray(response.data) ? response.data : [];
+          setProjects(projectsData);
         } else {
-          console.log('⚠️ No featured projects found, loading all published projects...');
-          // Fallback: get any published projects
-          response = await api.projects.getAll({ 
-            status: 'published', 
-            limit: 3 
-          });
-          
-          console.log('📊 Published projects response:', response);
-          
-          if (response.success) {
-            const projects = (response.data as Project[]) || [];
-            console.log(`✅ Loaded ${projects.length} published projects for homepage`);
-            setProjects(projects);
-          } else {
-            console.log('❌ No published projects found, loading ANY projects...');
-            // Last fallback: get any projects
-            response = await api.projects.getAll({ limit: 3 });
-            
-            if (response.success) {
-              const projects = (response.data as Project[]) || [];
-              console.log(`🔄 Loaded ${projects.length} ANY projects for homepage`);
-              setProjects(projects);
-            }
-          }
+          setError('Failed to load projects');
+          setProjects([]);
         }
-      } catch (error) {
-        console.error('❌ Error loading featured projects:', error);
-        setProjects([]);
+      } catch (error: any) {
+        if (isMounted) {
+          setError(error.message || 'Failed to load projects');
+          setProjects([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadProjects();
+    // Add a small delay to ensure API is ready
+    const timer = setTimeout(loadProjects, 100);
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -106,14 +100,10 @@ export const ProjectsShowcase = () => {
           </p>
         </div>
 
-        {projects.length === 0 ? (
-          <div className="text-center py-16">
-            <FolderKanban className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No projects available yet</p>
-          </div>
-        ) : (
+        {/* Always try to render projects if we have them */}
+        {Array.isArray(projects) && projects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {projects.map((project) => (
+            {projects.map((project, index) => (
               <Card
                 key={project._id || project.id}
                 data-animate
@@ -152,6 +142,28 @@ export const ProjectsShowcase = () => {
                 </CardFooter>
               </Card>
             ))}
+          </div>
+        ) : loading ? (
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading projects...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-16">
+            <FolderKanban className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <p className="text-red-500 mb-2">Error loading projects</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <FolderKanban className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No projects available yet</p>
           </div>
         )}
 

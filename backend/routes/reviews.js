@@ -312,7 +312,8 @@ router.get('/featured/list', async (req, res) => {
     console.error('Get featured reviews error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching featured reviews'
+      message: 'Server error while fetching featured reviews',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });

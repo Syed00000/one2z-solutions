@@ -50,17 +50,24 @@ app.use(limiter);
 
 // CORS configuration - Allow everything for now
 app.use(cors({
-  origin: '*',
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'content-type']
+  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'content-type', 'x-requested-with'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 600
 }));
 
 // Manual CORS headers
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cookie,content-type');
+  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app'];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, content-type');
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') {
@@ -78,11 +85,24 @@ app.use(cookieParser());
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ Connected to MongoDB');
+    console.log(`📍 Database: ${mongoose.connection.name}`);
   })
   .catch((error) => {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
+    console.error('❌ MongoDB connection error:', error.message);
   });
+
+// Handle MongoDB connection events
+mongoose.connection.on('connected', () => {
+  console.log('✅ Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️  Mongoose disconnected from MongoDB');
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -98,18 +118,47 @@ app.get('/api/health', (req, res) => {
 });
 
 // Debug endpoint
-app.get('/api/debug', (req, res) => {
-  res.json({
-    environment: process.env.NODE_ENV,
-    mongoState: mongoose.connection.readyState,
-    mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
-    hasRequiredEnvVars: {
-      MONGODB_URI: !!process.env.MONGODB_URI,
-      JWT_SECRET: !!process.env.JWT_SECRET,
-      ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
-      ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD
+app.get('/api/debug', async (req, res) => {
+  try {
+    let projectCount = 0;
+    let reviewCount = 0;
+    
+    if (mongoose.connection.readyState === 1) {
+      const Project = (await import('./models/Project.js')).default;
+      const Review = (await import('./models/Review.js')).default;
+      
+      projectCount = await Project.countDocuments();
+      reviewCount = await Review.countDocuments();
     }
-  });
+    
+    res.json({
+      environment: process.env.NODE_ENV,
+      mongoState: mongoose.connection.readyState,
+      mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+      databaseName: mongoose.connection.name,
+      projectCount,
+      reviewCount,
+      hasRequiredEnvVars: {
+        MONGODB_URI: !!process.env.MONGODB_URI,
+        JWT_SECRET: !!process.env.JWT_SECRET,
+        ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+        ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD
+      }
+    });
+  } catch (error) {
+    res.json({
+      environment: process.env.NODE_ENV,
+      mongoState: mongoose.connection.readyState,
+      mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+      error: error.message,
+      hasRequiredEnvVars: {
+        MONGODB_URI: !!process.env.MONGODB_URI,
+        JWT_SECRET: !!process.env.JWT_SECRET,
+        ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
+        ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD
+      }
+    });
+  }
 });
 
 // Routes

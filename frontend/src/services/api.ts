@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://one2z-backend.vercel.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // API Response interface
 interface ApiResponse<T = any> {
@@ -45,6 +45,7 @@ class ApiService {
       method: config.method || 'GET',
       headers: { ...defaultHeaders, ...config.headers },
       credentials: 'include', // Include cookies
+      mode: 'cors', // Explicitly set CORS mode
     };
 
     if (config.body && config.method !== 'GET') {
