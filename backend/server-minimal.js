@@ -4,9 +4,20 @@ import cors from 'cors';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Manual CORS headers FIRST
+// Manual CORS headers FIRST - specific origin for credentials
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  
+  // Allow specific origins
+  if (origin === 'https://one2zsolutions.vercel.app' || 
+      origin === 'http://localhost:8080' || 
+      origin === 'http://localhost:8081') {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,Cookie,content-type');
   res.header('Access-Control-Max-Age', '86400');
@@ -19,10 +30,23 @@ app.use((req, res, next) => {
 
 // CORS package as backup
 app.use(cors({
-  origin: '*',
-  credentials: false,
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://one2zsolutions.vercel.app',
+      'http://localhost:8080',
+      'http://localhost:8081',
+      'http://localhost:3000'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cookie', 'content-type'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cookie'],
   optionsSuccessStatus: 200
 }));
 
