@@ -5,12 +5,6 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import nodemailer from 'nodemailer';
-import multer from 'multer';
-import cloudinary from 'cloudinary';
-import { randomBytes, createHash } from 'crypto';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -27,30 +21,22 @@ import { notFound } from './middleware/notFound.js';
 // Load environment variables
 dotenv.config();
 
-// Set production defaults if not set
-if (process.env.NODE_ENV === 'production') {
-  process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/one2z-solutions';
-  process.env.JWT_SECRET = process.env.JWT_SECRET || 'your-super-secure-jwt-secret-key-here-32-chars-long-for-security';
-  process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'syedimranh59@gmail.com';
-  process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@123';
-}
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware (disabled for debugging)
+// Security middleware
 app.use(helmet());
 
-// Rate limiting (disabled for debugging)
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
-// CORS configuration - Allow everything for now
+// CORS configuration
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-backend.onrender.com'],
+  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'content-type', 'x-requested-with'],
@@ -60,7 +46,7 @@ app.use(cors({
 
 // Manual CORS headers
 app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-backend.onrender.com'];
+  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions.onrender.com'];
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
@@ -89,22 +75,7 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch((error) => {
     console.error('❌ MongoDB connection error:', error.message);
-    console.error('❌ Full error:', error);
-    console.error('❌ MongoDB URI format check:', process.env.MONGODB_URI ? 'URI exists' : 'URI missing');
   });
-
-// Handle MongoDB connection events
-mongoose.connection.on('connected', () => {
-  console.log('✅ Mongoose connected to MongoDB');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ Mongoose connection error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️  Mongoose disconnected from MongoDB');
-});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -113,108 +84,8 @@ app.get('/api/health', (req, res) => {
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    mongoConnected: mongoose.connection.readyState === 1,
-    mongoState: mongoose.connection.readyState,
-    mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
-    hasMongoUri: !!process.env.MONGODB_URI,
-    hasJwtSecret: !!process.env.JWT_SECRET,
-    mongoUriPreview: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'Not set'
+    mongoConnected: mongoose.connection.readyState === 1
   });
-});
-
-// Debug endpoint
-app.get('/api/debug', async (req, res) => {
-  try {
-    let projectCount = 0;
-    let reviewCount = 0;
-    let userCount = 0;
-    let adminUser = null;
-    
-    if (mongoose.connection.readyState === 1) {
-      const Project = (await import('./models/Project.js')).default;
-      const Review = (await import('./models/Review.js')).default;
-      const User = (await import('./models/User.js')).default;
-      
-      projectCount = await Project.countDocuments();
-      reviewCount = await Review.countDocuments();
-      userCount = await User.countDocuments();
-      adminUser = await User.findOne({ role: 'admin' }).select('email role isActive');
-    }
-    
-    res.json({
-      environment: process.env.NODE_ENV,
-      mongoState: mongoose.connection.readyState,
-      mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
-      databaseName: mongoose.connection.name,
-      projectCount,
-      reviewCount,
-      userCount,
-      adminUser: adminUser ? { 
-        email: adminUser.email, 
-        role: adminUser.role, 
-        isActive: adminUser.isActive 
-      } : null,
-      hasRequiredEnvVars: {
-        MONGODB_URI: !!process.env.MONGODB_URI,
-        JWT_SECRET: !!process.env.JWT_SECRET,
-        ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
-        ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD
-      }
-    });
-  } catch (error) {
-    res.json({
-      environment: process.env.NODE_ENV,
-      mongoState: mongoose.connection.readyState,
-      mongoStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
-      error: error.message,
-      hasRequiredEnvVars: {
-        MONGODB_URI: !!process.env.MONGODB_URI,
-        JWT_SECRET: !!process.env.JWT_SECRET,
-        ADMIN_EMAIL: !!process.env.ADMIN_EMAIL,
-        ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD
-      }
-    });
-  }
-});
-
-// Seed endpoint for production (temporary)
-app.post('/api/seed', async (req, res) => {
-  try {
-    const User = (await import('./models/User.js')).default;
-    const Project = (await import('./models/Project.js')).default;
-    const Review = (await import('./models/Review.js')).default;
-
-    // Check if admin already exists
-    const existingAdmin = await User.findOne({ role: 'admin' });
-    if (existingAdmin) {
-      return res.json({
-        success: true,
-        message: 'Admin user already exists',
-        admin: { email: existingAdmin.email, role: existingAdmin.role }
-      });
-    }
-
-    // Create admin user
-    const adminUser = await User.create({
-      email: process.env.ADMIN_EMAIL || 'syedimranh59@gmail.com',
-      password: process.env.ADMIN_PASSWORD || 'admin@123',
-      role: 'admin',
-      isActive: true
-    });
-
-    res.json({
-      success: true,
-      message: 'Admin user created successfully',
-      admin: { email: adminUser.email, role: adminUser.role }
-    });
-  } catch (error) {
-    console.error('Seed error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating admin user',
-      error: error.message
-    });
-  }
 });
 
 // Routes
