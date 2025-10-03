@@ -1,5 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? 'https://one2z-solutions.onrender.com/api' : 'http://localhost:5000/api');
+const API_BASE_URL = 'https://one2z-solutions.onrender.com/api';
 
 // API Response interface
 interface ApiResponse<T = any> {
