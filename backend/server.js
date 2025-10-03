@@ -36,7 +36,7 @@ app.use(limiter);
 
 // CORS configuration - Specific origins with credentials
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions.onrender.com'],
+  origin: ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions-backend.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'content-type', 'x-requested-with'],
@@ -46,7 +46,7 @@ app.use(cors({
 
 // Manual CORS headers - Dynamic origin
 app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions.onrender.com'];
+  const allowedOrigins = ['http://localhost:8080', 'http://localhost:3000', 'https://one2zsolutions.vercel.app', 'https://one2z-solutions-backend.vercel.app'];
   const origin = req.headers.origin;
   
   if (allowedOrigins.includes(origin)) {

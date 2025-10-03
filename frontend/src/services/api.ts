@@ -1,7 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://one2z-solutions.onrender.com/api';
-
-// Log the API URL for debugging
-console.log('🔗 API Base URL:', API_BASE_URL);
+const API_BASE_URL = 'https://one2z-solutions-backend.vercel.app/api';
+// const API_BASE_URL = 'https://one2z-solutions.onrender.com/api'; // Old Render URL
 
 // API Response interface
 interface ApiResponse<T = any> {
