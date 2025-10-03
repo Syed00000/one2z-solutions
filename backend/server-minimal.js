@@ -90,11 +90,39 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
+// Projects endpoints
 app.get('/api/projects', (req, res) => {
   res.json({
     success: true,
     data: [],
-    message: 'Minimal server - no projects yet'
+    message: 'No projects yet'
+  });
+});
+
+// Messages endpoints
+app.get('/api/messages', (req, res) => {
+  res.json({
+    success: true,
+    data: [],
+    message: 'No messages yet'
+  });
+});
+
+// Meetings endpoints
+app.get('/api/meetings', (req, res) => {
+  res.json({
+    success: true,
+    data: [],
+    message: 'No meetings yet'
+  });
+});
+
+// Reviews endpoints
+app.get('/api/reviews', (req, res) => {
+  res.json({
+    success: true,
+    data: [],
+    message: 'No reviews yet'
   });
 });
 
@@ -102,7 +130,7 @@ app.get('/api/reviews/featured/list', (req, res) => {
   res.json({
     success: true,
     data: [],
-    message: 'Minimal server - no reviews yet'
+    message: 'No featured reviews yet'
   });
 });
 
