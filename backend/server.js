@@ -5,6 +5,12 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
+import multer from 'multer';
+import cloudinary from 'cloudinary';
+import { randomBytes, createHash } from 'crypto';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -22,47 +28,46 @@ import { notFound } from './middleware/notFound.js';
 dotenv.config();
 
 // Set production defaults if not set
-if (process.env.NODE_ENV === 'production' && !process.env.MONGODB_URI) {
-  process.env.MONGODB_URI = 'mongodb+srv://username:password@cluster.mongodb.net/one2z-solutions';
-  process.env.JWT_SECRET = 'your-super-secure-jwt-secret-key-here-32-chars-long-for-security';
-  process.env.ADMIN_EMAIL = 'syedimranh59@gmail.com';
-  process.env.ADMIN_PASSWORD = 'admin@123';
+if (process.env.NODE_ENV === 'production') {
+  process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://username:password@cluster.mongodb.net/one2z-solutions';
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'your-super-secure-jwt-secret-key-here-32-chars-long-for-security';
+  process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'syedimranh59@gmail.com';
+  process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@123';
 }
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security middleware
+// Security middleware (disabled for debugging)
 app.use(helmet());
 
-// Rate limiting
+// Rate limiting (disabled for debugging)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
-// EMERGENCY CORS FIX - Allow everything temporarily
+// CORS configuration - Allow everything for now
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Manual CORS headers
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', '*');
-  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   res.header('Access-Control-Max-Age', '86400');
-  
+
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
   next();
 });
-
-// Simple CORS package as backup
-app.use(cors({
-  origin: true,
-  credentials: true,
-  optionsSuccessStatus: 200
-}));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -81,8 +86,8 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
