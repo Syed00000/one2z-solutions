@@ -206,57 +206,23 @@ router.post('/forgot-password', validatePasswordReset, async (req, res) => {
     console.log(`⏰ Valid for: 10 minutes`);
     console.log(`${'='.repeat(50)}\n`);
 
-    // Send OTP via email
-    try {
-      console.log('📧 Creating email transporter...');
-      const transporter = createEmailTransporter();
-      
-      console.log('📧 Sending OTP email...');
-      const mailOptions = {
-        from: process.env.EMAIL_USER || 'noreply@one2zsolutions.com',
-        to: email,
-        subject: 'Password Reset OTP - One2Z Solutions',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Password Reset Request</h2>
-            <p>You requested to reset your password for One2Z Solutions Admin Panel.</p>
-            <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
-              <h1 style="color: #e63946; font-size: 36px; letter-spacing: 8px; margin: 0;">${otp}</h1>
-            </div>
-            <p>This OTP will expire in 10 minutes.</p>
-            <p>If you didn't request this, please ignore this email.</p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
-            <p style="color: #666; font-size: 12px;">One2Z Solutions - Construction & Interior Design</p>
-          </div>
-        `
-      };
-
-      const result = await transporter.sendMail(mailOptions);
-      console.log('✅ OTP email sent successfully to:', email);
-      console.log('📧 Email result:', result.messageId);
-
-      res.status(200).json({
-        success: true,
-        message: 'OTP sent to your email'
-      });
-
-    } catch (emailError) {
-      console.error('❌ Email sending failed:', emailError);
-      console.error('Email error details:', emailError.message);
-      console.error('Email config check:', {
-        hasEmailUser: !!process.env.EMAIL_USER,
-        hasEmailPassword: !!process.env.EMAIL_PASSWORD,
-        emailUser: process.env.EMAIL_USER
-      });
-      
-      // Still return success so user can use OTP from console
-      res.status(200).json({
-        success: true,
-        message: 'OTP generated successfully. Email service temporarily unavailable - check server logs for OTP.',
-        devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
-        warning: 'Email configuration needs to be updated with valid Gmail App Password'
-      });
-    }
+    // SMTP is blocked on Render - Skip email sending for now
+    console.log('⚠️ SMTP connections are blocked on this cloud platform');
+    console.log('📧 Email would be sent to:', email);
+    console.log('💡 Using console OTP delivery method');
+    
+    // Return success with console OTP
+    res.status(200).json({
+      success: true,
+      message: 'OTP generated successfully. Check server logs for your OTP code.',
+      warning: 'Email delivery is temporarily unavailable due to cloud platform restrictions.',
+      instructions: 'Use the OTP code displayed in the server console logs.',
+      otpInfo: {
+        email: email,
+        validFor: '10 minutes',
+        note: 'Check Render logs for OTP code'
+      }
+    });
 
   } catch (error) {
     console.error('Forgot password error:', error);
