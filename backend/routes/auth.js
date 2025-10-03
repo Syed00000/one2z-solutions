@@ -8,15 +8,14 @@ import { authenticate, authorize } from '../middleware/auth.js';
 import { validateLogin, validatePasswordReset } from '../middleware/validation.js';
 
 const router = express.Router();
-
 // Temporary OTP storage (in production, use Redis or database)
 const otpStore = new Map();
 
 // Email transporter configuration
 const createEmailTransporter = () => {
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
+  return nodemailer.createTransporter({
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT) || 587,
     secure: false, // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
@@ -237,12 +236,18 @@ router.post('/forgot-password', validatePasswordReset, async (req, res) => {
     } catch (emailError) {
       console.error('❌ Email sending failed:', emailError);
       console.error('Email error details:', emailError.message);
+      console.error('Email config check:', {
+        hasEmailUser: !!process.env.EMAIL_USER,
+        hasEmailPassword: !!process.env.EMAIL_PASSWORD,
+        emailUser: process.env.EMAIL_USER
+      });
       
       // Still return success so user can use OTP from console
       res.status(200).json({
         success: true,
-        message: 'OTP generated successfully. Check server console for OTP code.',
-        devOtp: process.env.NODE_ENV === 'development' ? otp : undefined
+        message: 'OTP generated successfully. Email service temporarily unavailable - check server logs for OTP.',
+        devOtp: process.env.NODE_ENV === 'development' ? otp : undefined,
+        warning: 'Email configuration needs to be updated with valid Gmail App Password'
       });
     }
 
