@@ -63,11 +63,28 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-  res.json({
-    success: false,
-    message: 'Minimal server - login not implemented yet',
-    received: req.body
-  });
+  const { email, password } = req.body;
+  
+  // Simple hardcoded admin check
+  if (email === 'syedimranh59@gmail.com' && password === 'admin@123') {
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: {
+          id: '1',
+          email: 'syedimranh59@gmail.com',
+          role: 'admin'
+        },
+        token: 'fake-jwt-token-for-testing'
+      }
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
+    });
+  }
 });
 
 app.get('/api/projects', (req, res) => {
